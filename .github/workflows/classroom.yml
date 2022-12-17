@@ -28,6 +28,7 @@ jobs:
         run: |
           docker compose up -d
           ./scripts/wait-script.sh
+          sleep 30
         env:
           WAIT_PORTS: 8080,8070,8060,8050
 
@@ -39,6 +40,11 @@ jobs:
           environment: v2/postman/environment.json
           delayRequest: 100
           reporters: '[ "cli" ]'
+
+      - name: Show docker logs
+        timeout-minutes: 5
+        run: |
+          docker compose logs
 
       - uses: education/autograding@v1
         id: autograder
