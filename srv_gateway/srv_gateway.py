@@ -16,7 +16,9 @@ app = flask.Flask(__name__)
 
 @app.route('/api/v1/hotels', methods=['GET'])
 def hotelsRoute():
-    r = requests.get(f'{services.RESERVATION_ADDR}/all_hotels')
+    page = int(flask.request.args.get('page', '0'))
+    size = int(flask.request.args.get('size', '100'))
+    r = requests.get(f'{services.RESERVATION_ADDR}/all_hotels?page={page}&size={size}')
     if r.status_code != status.HTTP_200_OK:
         return flask.Response('Smth went wrong', status.HTTP_400_BAD_REQUEST)
     resp = flask.Response(r.text)
@@ -142,7 +144,7 @@ def specReservationsRoute(uid):
         r2 = requests.get(
             f'{services.PAYMENT_ADDR}/payment?uid={r1["payment_uid_"]}').json()
         r1.pop('payment_uid_', None)
-        res = Reservation(payment=PaymentInfo(**r2).toJSON(), **r1)
+        res = Reservation(payment=PaymentInfo(**r2), **r1)
 
         resp = flask.Response(res.toJSON())
         resp.headers['Content-Type'] = 'application/json'

@@ -44,7 +44,7 @@ jobs:
       - name: Show docker logs
         timeout-minutes: 5
         run: |
-          docker compose logs
+          docker compose logs 1>&2
 
       - uses: education/autograding@v1
         id: autograder

@@ -5,7 +5,7 @@ from flask_api import status
 import psycopg2
 
 from urllib.request import Request
-from time import sleep
+from time import sleep, strftime
 
 import common.services as services
 from common.api_messages import *
@@ -28,7 +28,7 @@ while True:
 
 def getHotelsPage(pageNum: int, pageSize: int) -> HotelsPage:
     lim = pageSize
-    offs = pageSize * pageNum
+    offs = pageSize * (pageNum - 1)
     with conn.cursor() as cursor:
         cursor.execute(
             'SELECT id, hotel_uid, name, country, city, address, stars, price ' +
@@ -52,7 +52,7 @@ def getUserReservations(name: str) -> list[Reservation]:
     with conn.cursor() as cursor:
         cursor.execute(
             'SELECT r.reservation_uid, r.start_date, r.end_date, r.status, r.payment_uid, ' +
-            'h.hotel_uid, h.name, h.address, h.stars ' +
+            'h.hotel_uid, h.name, h.stars, h.country, h.city, h.address ' +
             'FROM reservation r INNER JOIN hotels h ON r.hotel_id = h.id ' +
             'WHERE username = %s',
             (name,)
@@ -62,15 +62,15 @@ def getUserReservations(name: str) -> list[Reservation]:
             # res.append(*raw[:5], HotelInfo(*raw[5:]))
             res.append({
                 "reservationUid": raw[0],
-                "startDate": str(raw[1]),  # TODO: ISO?
-                "endDate": str(raw[2]),
+                "startDate": raw[1].strftime('%Y-%m-%d'),
+                "endDate": raw[2].strftime('%Y-%m-%d'),
                 "status": raw[3],
                 "payment_uid_": raw[4],
                 "hotel": {
                     "hotelUid": raw[5],
                     "name": raw[6],
-                    "fullAddress": raw[7],
-                    "stars": raw[8],
+                    "stars": raw[7],
+                    "fullAddress": f'{raw[8]}, {raw[9]}, {raw[10]}',
                 },
             })
     return res
@@ -98,7 +98,7 @@ def cancelReservation(uuid):
 
 @app.route('/all_hotels', methods=['GET'])
 def allHotelsRoute():
-    pageNum = int(flask.request.args.get('page', '0'))
+    pageNum = int(flask.request.args.get('page', '1'))
     pageSize = int(flask.request.args.get('size', '100'))
     hPage = getHotelsPage(pageNum, pageSize)
     resp = flask.Response(hPage.toJSON())
